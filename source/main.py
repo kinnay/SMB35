@@ -465,6 +465,12 @@ class Ranking2Server(ranking2.Ranking2Server):
 		super().__init__()
 		self.common_data = {}
 	
+	async def get_common_data(self, client, flags, pid, unique_id):
+		data = self.common_data.get(pid, {})
+		if unique_id not in data:
+			raise common.RMCError("Ranking2::InvalidArgument")
+		return data[unique_id]
+	
 	async def put_common_data(self, client, data, unique_id):
 		pid = client.pid()
 		if pid not in self.common_data:

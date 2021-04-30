@@ -31,6 +31,8 @@ TEMPLATE = """
 	<body>
 		Current server time: %s<br><br>
 		
+		Server boot time: %s<br><br>
+		
 		Number of connected clients: %i<br><br>
 		
 		Active matchmake sessions:<br><br>
@@ -43,13 +45,15 @@ TEMPLATE = """
 </html>
 """
 
-ROW_TEMPLATE = "\t\t\t<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+ROW_TEMPLATE = "\t\t\t<tr><td>%i</td><td>%i</td><td>%s</td></tr>"
 
 
 class Dashboard:
 	def __init__(self, clients, matchmaker):
 		self.clients = clients
 		self.matchmaker = matchmaker
+		
+		self.start_time = common.DateTime.now()
 	
 	async def handle(self, client, request):
 		rows = []
@@ -62,8 +66,8 @@ class Dashboard:
 		response = http.HTTPResponse(200)
 		response.headers["Content-Type"] = "text/html"
 		response.text = TEMPLATE %(
-			common.DateTime.now(), len(self.clients.clients),
-			"\n".join(rows)
+			common.DateTime.now(), self.start_time,
+			len(self.clients.clients), "\n".join(rows)
 		)
 		return response
 
