@@ -38,14 +38,14 @@ TEMPLATE = """
 		Active matchmake sessions:<br><br>
 		
 		<table>
-			<tr><th>ID</th><th>Participants</th><th>Start time</th></tr>
+			<tr><th>ID</th><th>Game mode</th><th>Participants</th><th>Start time</th></tr>
 %s
 		</table>
 	</body>
 </html>
 """
 
-ROW_TEMPLATE = "\t\t\t<tr><td>%i</td><td>%i</td><td>%s</td></tr>"
+ROW_TEMPLATE = "\t\t\t<tr><td>%i</td><td>%i</td><td>%i</td><td>%s</td></tr>"
 
 
 class Dashboard:
@@ -60,7 +60,8 @@ class Dashboard:
 		for session in self.matchmaker.sessions.values():
 			info = session.session
 			rows.append(ROW_TEMPLATE %(
-				info.id, info.num_participants, info.started_time
+				info.id, info.game_mode, info.num_participants,
+				info.started_time
 			))
 		
 		response = http.HTTPResponse(200)
