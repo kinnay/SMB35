@@ -1,7 +1,7 @@
 
 from nintendo.nex import settings, kerberos, common, prudp, rmc, \
 	authentication, secure, utility, notification, messaging, \
-	ranking2, matchmaking_eagle as matchmaking
+	ranking2_eagle as ranking2, matchmaking_eagle as matchmaking
 from anynet import tls
 import itertools
 import secrets
@@ -476,7 +476,15 @@ class Ranking2Server(ranking2.Ranking2Server):
 		if pid not in self.common_data:
 			self.common_data[pid] = {}
 		self.common_data[pid][unique_id] = data
-		
+	
+	async def get_ranking(self, client, param):
+		info = ranking2.Ranking2Info()
+		info.data = []
+		info.lowest_rank = 10000
+		info.num_entries = 0
+		info.season = 0
+		return info
+	
 	async def get_category_setting(self, client, category):
 		setting = ranking2.Ranking2CategorySetting()
 		setting.min_score = 0
@@ -489,6 +497,16 @@ class Ranking2Server(ranking2.Ranking2Server):
 		setting.max_seasons_to_go_back = 3
 		setting.score_order = 1
 		return setting
+		
+	async def get_estimate_my_score_rank(self, client, input):
+		output = ranking2.Ranking2EstimateScoreRankOutput()
+		output.rank = 0
+		output.length = 0
+		output.score = 0
+		output.category = input.category
+		output.season = 0
+		output.sampling_rate = 0
+		return output
 
 
 async def main():
