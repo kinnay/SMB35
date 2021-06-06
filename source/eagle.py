@@ -31,6 +31,7 @@ class PacketType:
 	CLIENT_READY = 3
 	PING = 4
 	PONG = 5
+	NODE_NOTICE = 8
 	DISCONNECTED = 9
 	
 	RPC = 16
@@ -171,6 +172,7 @@ class EagleClient:
 			raise RuntimeError("Received unexpected client ready packet")
 		
 		self.state = State.READY
+		await self.server.mark_ready(self)
 		
 	async def process_ping(self, stream):
 		timer = stream.bits(64)
@@ -210,7 +212,29 @@ class EagleClient:
 		stream.bits(server_time, 64)
 		stream.bits(client_time, 64)
 		await self.send(PacketType.PONG, stream.get())
+	
+	async def send_node_added(self, node_id):
+		stream = streams.BitStreamOut(">")
+		stream.bits(0, 8)
+		stream.bits(node_id, 16)
+		stream.bits(int(time.monotonic() * 1000), 64)
+		await self.send(PacketType.NODE_NOTICE, stream.get())
+	
+	async def send_node_removed(self, node_id):
+		stream = streams.BitStreamOut(">")
+		stream.bits(3, 8)
+		stream.bits(node_id, 16)
+		stream.bits(int(time.monotonic() * 1000), 64)
+		await self.send(PacketType.NODE_NOTICE, stream.get())
 		
+	async def send_all_nodes(self, node_ids):
+		stream = streams.BitStreamOut(">")
+		stream.bits(4, 8)
+		for i in range(M):
+			stream.bit(i in node_ids)
+		stream.bits(int(time.monotonic() * 1000), 64)
+		await self.send(PacketType.NODE_NOTICE, stream.get())
+	
 	async def send_rpc(self, source_id, rpc_id, payload):
 		stream = streams.BitStreamOut(">")
 		stream.bits(int(time.monotonic() * 1000), 64)
@@ -230,7 +254,10 @@ class EagleClient:
 		stream.bytealign()
 		stream.write(payload)
 		
-		await self.client.send(stream.get())
+		try:
+			await self.client.send(stream.get())
+		except util.StreamError:
+			await self.server.remove_node(self)
 
 
 class EagleServer:
@@ -262,8 +289,25 @@ class EagleServer:
 		self.node_id += 1
 		if self.node_id < M:
 			client = EagleClient(self, client, self.node_id)
-			self.clients[client.node_id] = client
-			await client.process()
+			with util.catch(Exception):
+				await client.process()
+			await self.remove_node(client)
+	
+	async def mark_ready(self, client):
+		self.clients[client.node_id] = client
+		
+		await client.send_all_nodes(self.clients)
+		
+		for other in list(self.clients.values()):
+			if other != client:
+				await other.send_node_added(client.node_id)
+	
+	async def remove_node(self, client):
+		if client.node_id in self.clients:
+			del self.clients[client.node_id]
+			
+			for other in list(self.clients.values()):
+				await other.send_node_removed(client.node_id)
 	
 	async def relay_rpc(self, source, targets, rpc_id, payload):
 		if targets == [M]:
@@ -274,11 +318,8 @@ class EagleServer:
 		for target in targets:
 			if target == 0:
 				await self.process_rpc(source, rpc_id, payload)
-			else:
-				client = self.clients.get(target)
-				if client and client.state == State.READY:
-					with util.catch(util.StreamError):
-						await client.send_rpc(source.node_id, rpc_id, payload)
+			elif target in self.clients:
+				await self.clients[target].send_rpc(source.node_id, rpc_id, payload)
 	
 	async def process_rpc(self, client, rpc_id, payload):
 		logger.info("Received RPC: %i", rpc_id)
