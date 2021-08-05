@@ -414,6 +414,10 @@ class MatchmakeRefereeServer(matchmaking.MatchmakeRefereeServer):
 	async def end_round(self, client, param):
 		if param.round_id not in self.rounds:
 			raise common.RMCError("MatchmakeReferee::RoundNotFound")
+		
+	async def end_round_with_partial_report(self, client, param):
+		if param.round_id not in self.rounds:
+			raise common.RMCError("MatchmakeReferee::RoundNotFound")
 
 
 class MessageDeliveryServer(messaging.MessageDeliveryServer):
