@@ -17,10 +17,10 @@ pip install -r requirements.txt
 ```
 2. Create a `resources/` folder on `./source/`
 3. Move your `fullchain.pem` and your `privkey.pem` to `./sources/resources`
-4. Launch the server `python main.py`
 
-5. In order for the patch to redirect to your own domain, you should edit said patch file. The easiest way to do this would be with an hex editor. At offset `0x35` the URL starts. Replace it with your own. In the event that your URL has a different length than the original, you should change said length in `0x33-0x34`. You should write your length+1 in that offset. Do not forget to leave a null byte(`0x00`) between the URL and EEOF
-6. You should also change the URL in [main.py](https://github.com/kinnay/SMB35/blob/master/source/main.py#L196) to reflect your own. Check [#1](https://github.com/kinnay/SMB35/issues/1) for more info
+4. In order for the patch to redirect to your own domain, you should edit said patch file. The easiest way to do this would be with an hex editor. At offset `0x35` the URL starts. Replace it with your own. In the event that your URL has a different length than the original, you should change said length in `0x33-0x34`. You should write your length+1 in that offset. Do not forget to leave a null byte(`0x00`) between the URL and EEOF
+5. You should also change the URL in [main.py](https://github.com/kinnay/SMB35/blob/master/source/main.py#L196) to reflect your own. Check [#1](https://github.com/kinnay/SMB35/issues/1) for more info
+6. Launch the server `python main.py`
 
 ### Links
 * [Python package for game servers](https://github.com/kinnay/NintendoClients)
